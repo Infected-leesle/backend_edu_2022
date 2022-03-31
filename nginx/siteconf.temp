@@ -27,6 +27,6 @@ server {
     include /etc/nginx/hsts.conf;
 
     location / {
-        root     /var/www/html;
+        root     /var/www/html/${domain};
     }
 }
