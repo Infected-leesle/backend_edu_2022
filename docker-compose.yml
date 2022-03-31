@@ -1,0 +1,94 @@
+version: "3.7"
+
+services:
+  redis:
+    container_name: test_deploy_redis01
+    image: 'redis:latest'
+    ports:
+      - '6378:6379'
+
+  celery:
+    build: .
+    volumes:
+      - ./app:/django-gunicorn-nginx-docker/app/
+    container_name: test_deploy_celery01
+    command: celery -A app worker -l info
+    depends_on:
+      - web
+      - redis
+      - db
+
+  web:
+    build: .
+    container_name: test_deploy_web
+    command: gunicorn app.wsgi:application --bind 0.0.0.0:8000
+    volumes:
+      - ./app:/django-gunicorn-nginx-docker/app/
+      - ./staticfiles:/django-gunicorn-nginx-docker/app/static/
+    expose:
+      - 8000
+    env_file:
+      - ./.env
+    depends_on:
+      - db
+      - redis
+
+  db:
+    image: postgres
+    container_name: test_deploy_db
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=hello
+      
+  nginx:
+    container_name: deploy_nginx
+    build: ./nginx
+    image: nginx
+    env_file:
+      - ./config.env
+    volumes:
+      - ./staticfiles:/django-gunicorn-nginx-docker/app/static/
+      - nginx_conf:/etc/nginx/sites
+      - nginx_ssl:/etc/nginx/ssl
+      - letsencrypt_certs:/etc/letsencrypt
+      - certbot_acme_challenge:/var/www/certbot
+    ports:
+      - "8080:80"
+      - "443:443"
+    depends_on:
+      - web
+    restart: always
+
+  certbot:
+    build: ./certbot
+    image: certbot
+    env_file:
+      - ./config.env
+    volumes:
+      - letsencrypt_certs:/etc/letsencrypt
+      - certbot_acme_challenge:/var/www/certbot
+    depends_on:
+      - nginx
+
+  cron:
+    build: ./cron
+    image: cron
+    environment:
+      COMPOSE_PROJECT_NAME: "${COMPOSE_PROJECT_NAME}"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./:/workdir:ro
+    depends_on:
+      - nginx
+      - certbot
+
+volumes:
+  nginx_conf:
+  nginx_ssl:
+    external: true
+  letsencrypt_certs:
+    external: true
+  certbot_acme_challenge:
