@@ -1,0 +1,36 @@
+---
+- hosts: dev
+  tasks:
+    - name: Print message
+      debug:
+        msg: Hello Ansible World
+  
+- hosts: dev    
+  become: yes
+  roles:
+    - { role: dev/roles/install-packages/ }
+
+
+- hosts: prod
+  tasks:
+    - name: Print message
+      debug:
+        msg: Hello Ansible World
+        
+        
+- hosts: prod
+  vars_prompt:
+    - name: "install_mariadb"
+      prompt: "Do you want to install MariaDB (yes/no)?"
+      private: no  
+  tasks:
+    - name: install MariaDB
+      yum:
+        name: MariaDB
+        state: present
+      when: install_mariadb | bool
+
+    - include_tasks: MySQL.yml
+      when: install_mariadb | bool
+        
+

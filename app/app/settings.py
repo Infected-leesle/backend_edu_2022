@@ -31,17 +31,18 @@ ALLOWED_HOSTS = ["app", "celadonbookapiedu.ga", "178.128.194.5"] #celadonbookapi
 # Application definition
 
 INSTALLED_APPS = [
-    'django_celery_results',
+    #'django_celery_results',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django_celery_beat',
+    #'django_celery_beat',
     'django_book_app',
     'rest_framework',
     'django_filters',
+    'celery',
 ]
 
 
